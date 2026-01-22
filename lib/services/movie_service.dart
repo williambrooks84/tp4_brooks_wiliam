@@ -15,7 +15,7 @@ class MovieService {
     // Vérifie que la clé API est bien fournie
     if (_apiKey.isEmpty) {
       throw Exception(
-        'Clé API manquante ! Lance l\'app avec --dart-define=WATCHMODE_API_KEY=lmgoV2Yjj7LztXeCUjm7e0jnHO4jG9iF6mday58Z'
+        'Clé API manquante'
       );
     }
 
@@ -43,7 +43,7 @@ class MovieService {
   Future<Movie> getMovieDetails(int movieId) async {
     if (_apiKey.isEmpty) {
       throw Exception(
-        'Clé API manquante ! Lance l\'app avec --dart-define=WATCHMODE_API_KEY=lmgoV2Yjj7LztXeCUjm7e0jnHO4jG9iF6mday58Z'
+        'Clé API manquante'
       );
     }
 
@@ -68,7 +68,7 @@ class MovieService {
   Future<Movie> getMoviePlatforms (int movieId) async {
     if (_apiKey.isEmpty) {
       throw Exception(
-        'Clé API manquante ! Lance l\'app avec --dart-define=WATCHMODE_API_KEY=lmgoV2Yjj7LztXeCUjm7e0jnHO4jG9iF6mday58Z'
+        'Clé API manquante'
       );
     }
 
