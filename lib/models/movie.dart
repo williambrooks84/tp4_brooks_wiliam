@@ -3,11 +3,13 @@ class MovieListItem {
   final int id;
   final String title;
   final int year;
+  final List<String> genreNames;
 
   MovieListItem({
     required this.id,
     required this.title,
     required this.year,
+    required this.genreNames,
   });
 
   factory MovieListItem.fromJson(Map<String, dynamic> json) {
@@ -15,6 +17,13 @@ class MovieListItem {
       id: json['id'],
       title: json['title'] ?? 'Sans titre',
       year: json['year'] ?? 0,
+      genreNames: (json['genre_names'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          (json['genres'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          [],
     );
   }
 }

@@ -3,6 +3,12 @@ import '../models/movie.dart';
 import '../services/movie_service.dart';
 import 'movie_detail_page.dart';
 
+const _appGradient = LinearGradient(
+  colors: [Color(0xFF050810), Color.fromARGB(255, 119, 117, 124)],
+  begin: Alignment.topLeft,
+  end: Alignment.bottomRight,
+);
+
 class MovieListPage extends StatefulWidget {
   final MovieService movieService;
 
@@ -17,6 +23,9 @@ class _MovieListPageState extends State<MovieListPage> {
   bool isLoading = true;
   String? errorMessage;
   final Set<int> favorites = {};
+
+  // cache genres fetched from detail endpoint
+  final Map<int, List<String>> _genresById = {};
 
   @override
   void initState() {
@@ -36,6 +45,11 @@ class _MovieListPageState extends State<MovieListPage> {
         movies = loadedMovies;
         isLoading = false;
       });
+
+      // fetch genres using the same detail logic
+      for (final item in loadedMovies) {
+        _loadGenresFor(item.id);
+      }
     } catch (e) {
       setState(() {
         errorMessage = e.toString();
@@ -44,24 +58,40 @@ class _MovieListPageState extends State<MovieListPage> {
     }
   }
 
+  Future<void> _loadGenresFor(int movieId) async {
+    if (_genresById.containsKey(movieId)) return;
+    try {
+      final details = await widget.movieService.getMovieDetails(movieId);
+      if (!mounted) return;
+      setState(() {
+        _genresById[movieId] = details.genreNames;
+      });
+    } catch (_) {
+      // ignore per-item failures
+    }
+  }
+
   void toggleFavorite(int movieId) {
     setState(() {
-      favorites.contains(movieId) ? favorites.remove(movieId) : favorites.add(movieId);
+      favorites.contains(movieId)
+          ? favorites.remove(movieId)
+          : favorites.add(movieId);
     });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.transparent,
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: const Text('🎬 Films récents'),
+        backgroundColor: Colors.black,
+        foregroundColor: Colors.white,
+        title: const Text('Films récents'),
         actions: [
+          IconButton(icon: const Icon(Icons.refresh), onPressed: _loadMovies),
           IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _loadMovies,
-          ),
-          IconButton(
-            icon: const Icon(Icons.favorite),
+            icon: const Icon(Icons.favorite, color: Colors.red),
             onPressed: () => Navigator.push(
               context,
               MaterialPageRoute(
@@ -76,14 +106,21 @@ class _MovieListPageState extends State<MovieListPage> {
           ),
         ],
       ),
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : errorMessage != null
+      body: Container(
+        decoration: const BoxDecoration(gradient: _appGradient),
+        child: SafeArea(
+          child: isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : errorMessage != null
               ? Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.error_outline, size: 60, color: Colors.red),
+                      const Icon(
+                        Icons.error_outline,
+                        size: 60,
+                        color: Colors.red,
+                      ),
                       const SizedBox(height: 16),
                       Text(errorMessage!, textAlign: TextAlign.center),
                       const SizedBox(height: 16),
@@ -101,8 +138,11 @@ class _MovieListPageState extends State<MovieListPage> {
                     movie: movies[index],
                     isFavorite: favorites.contains(movies[index].id),
                     onFavoriteTap: () => toggleFavorite(movies[index].id),
+                    genres: _genresById[movies[index].id] ?? const [],
                   ),
                 ),
+        ),
+      ),
     );
   }
 }
@@ -138,19 +178,36 @@ class _FavoritesPageState extends State<FavoritesPage> {
         .toList();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('❤️ Films favoris')),
-      body: favoriteMovies.isEmpty
-          ? const Center(child: Text('Aucun film favori ajouté.'))
-          : ListView.builder(
-              itemCount: favoriteMovies.length,
-              itemBuilder: (context, index) => MovieListCard(
-                movieService: widget.movieService,
-                movie: favoriteMovies[index],
-                isFavorite: true,
-                onFavoriteTap: () => _removeFavorite(favoriteMovies[index].id),
-                favoriteIcon: Icons.delete,
-              ),
-            ),
+      backgroundColor: Colors.transparent,
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        foregroundColor: Colors.white,
+        title: const Text('Films favoris'),
+      ),
+      body: Container(
+        decoration: const BoxDecoration(gradient: _appGradient),
+        child: SafeArea(
+          child: favoriteMovies.isEmpty
+              ? const Center(
+                  child: Text(
+                    'Aucun film favori ajouté.',
+                    style: TextStyle(color: Colors.white, fontSize: 28),
+                  ),
+                )
+              : ListView.builder(
+                  itemCount: favoriteMovies.length,
+                  itemBuilder: (context, index) => MovieListCard(
+                    movieService: widget.movieService,
+                    movie: favoriteMovies[index],
+                    isFavorite: true,
+                    onFavoriteTap: () =>
+                        _removeFavorite(favoriteMovies[index].id),
+                    favoriteIcon: Icons.delete,
+                  ),
+                ),
+        ),
+      ),
     );
   }
 }
@@ -162,6 +219,9 @@ class MovieListCard extends StatelessWidget {
   final VoidCallback onFavoriteTap;
   final IconData? favoriteIcon;
 
+  // add genres override
+  final List<String> genres;
+
   const MovieListCard({
     super.key,
     required this.movieService,
@@ -169,6 +229,7 @@ class MovieListCard extends StatelessWidget {
     required this.isFavorite,
     required this.onFavoriteTap,
     this.favoriteIcon,
+    this.genres = const [],
   });
 
   // Génère une couleur basée sur la première lettre du titre
@@ -197,15 +258,14 @@ class MovieListCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
+      color: Colors.black,
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       child: InkWell(
         onTap: () => Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => MovieDetailPage(
-              movieService: movieService,
-              movieId: movie.id,
-            ),
+            builder: (_) =>
+                MovieDetailPage(movieService: movieService, movieId: movie.id),
           ),
         ),
         child: ListTile(
@@ -220,12 +280,38 @@ class MovieListCard extends StatelessWidget {
               ),
             ),
           ),
-          title: Text(movie.title),
-          subtitle: Text('Année : ${movie.year}'),
+          title: Text(
+            movie.title,
+            style: const TextStyle(color: Colors.white, fontSize: 20),
+          ),
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (genres.isNotEmpty) ...[
+                const SizedBox(height: 6),
+                Text(
+                  genres.take(3).join(', '),
+                  style: const TextStyle(color: Colors.white70, fontSize: 14),
+                ),
+              ],
+              const SizedBox(height: 6),
+              Text(
+                '${movie.year}',
+                style: const TextStyle(
+                  color: Color.fromRGBO(221, 37, 40, 1),
+                  fontSize: 16,
+                ),
+              ),
+            ],
+          ),
+          isThreeLine: genres.isNotEmpty,
           trailing: IconButton(
             icon: Icon(
-              favoriteIcon ?? (isFavorite ? Icons.favorite : Icons.favorite_border),
-              color: isFavorite && favoriteIcon == null ? Colors.red : null,
+              favoriteIcon ??
+                  (isFavorite ? Icons.favorite : Icons.favorite_border),
+              color: isFavorite && favoriteIcon == null
+                  ? Colors.red
+                  : Colors.white,
             ),
             onPressed: onFavoriteTap,
           ),

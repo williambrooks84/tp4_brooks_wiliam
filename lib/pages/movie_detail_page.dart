@@ -1,7 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../models/movie.dart';
+// import 'package:tp4_brooks_william/models/movie.dart';
 import '../services/movie_service.dart';
+
+const _appGradient = LinearGradient(
+  colors: [
+    Color(0xFF050810),
+    Color.fromARGB(255, 119, 117, 124),
+  ],
+  begin: Alignment.topLeft,
+  end: Alignment.bottomRight,
+);
 
 class MovieDetailPage extends StatefulWidget {
   final MovieService movieService;
@@ -83,138 +93,164 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.transparent,
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
+        backgroundColor: Colors.black,
+        foregroundColor: Colors.white,
         title: Text(movie?.title ?? 'Chargement...'),
       ),
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : errorMessage != null
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.error_outline, size: 60, color: Colors.red),
-                      const SizedBox(height: 16),
-                      Text(errorMessage!, textAlign: TextAlign.center),
-                      const SizedBox(height: 16),
-                      ElevatedButton(
-                        onPressed: _loadMovieDetails,
-                        child: const Text('Réessayer'),
-                      ),
-                    ],
-                  ),
-                )
-              : SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Image du poster
-                      Image.network(
-                        movie!.posterUrl,
-                        width: double.infinity,
-                        height: 500,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Container(
-                          height: 500,
-                          color: Colors.grey[300],
-                          child: const Icon(Icons.movie, size: 100),
+      body: Container(
+        decoration: const BoxDecoration(gradient: _appGradient),
+        child: SafeArea(
+          child: DefaultTextStyle(
+            style: const TextStyle(color: Colors.white),
+            child: isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : errorMessage != null
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.error_outline, size: 60, color: Colors.red),
+                            const SizedBox(height: 16),
+                            Text(errorMessage!, textAlign: TextAlign.center),
+                            const SizedBox(height: 16),
+                            ElevatedButton(
+                              onPressed: _loadMovieDetails,
+                              child: const Text('Réessayer'),
+                            ),
+                          ],
                         ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.all(16),
+                      )
+                    : SingleChildScrollView(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Note et année
-                            Row(
-                              children: [
-                                const Icon(Icons.star, color: Colors.amber, size: 28),
-                                const SizedBox(width: 8),
-                                Text(
-                                  movie!.userRating.toStringAsFixed(1),
-                                  style: const TextStyle(
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.bold,
+                            // Image du poster
+                            Image.network(
+                              movie!.posterUrl,
+                              width: double.infinity,
+                              height: 500,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => Container(
+                                height: 500,
+                                color: Colors.grey[300],
+                                child: const Icon(Icons.movie, size: 100),
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // Note et année
+                                  Row(
+                                    children: [
+                                      const Icon(Icons.star, color: Colors.amber, size: 28),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        movie!.userRating.toStringAsFixed(1),
+                                        style: const TextStyle(
+                                          fontSize: 24,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        '/ 10',
+                                        style: const TextStyle(
+                                          fontSize: 16,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                      const Spacer(),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 12,
+                                          vertical: 6,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: Colors.red,
+                                          borderRadius: BorderRadius.circular(20),
+                                        ),
+                                        child: Text(
+                                          '${movie!.year}',
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  '/ 10',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    color: Colors.grey[600],
-                                  ),
-                                ),
-                                const Spacer(),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 6,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Colors.blue[700],
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  child: Text(
-                                    '${movie!.year}',
-                                    style: const TextStyle(
-                                      color: Colors.white,
+                                  const SizedBox(height: 16),
+                                  // Genres
+                                  if (movie!.genreNames.isNotEmpty) ...[
+                                    Center(
+                                      child: Wrap(
+                                        alignment: WrapAlignment.center,
+                                        runAlignment: WrapAlignment.center,
+                                        spacing: 8,
+                                        children: movie!.genreNames
+                                            .map((genre) => Chip(
+                                                  label: Text(
+                                                    genre,
+                                                    style: const TextStyle(color: Colors.white),
+                                                  ),
+                                                  backgroundColor: Colors.red[400],
+                                                  shape: RoundedRectangleBorder(
+                                                    borderRadius: BorderRadius.circular(12),
+                                                    side: BorderSide(color: Colors.transparent),
+                                                  ),
+                                                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                                ))
+                                            .toList(),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 20),
+                                  ],
+                                  // Synopsis
+                                  const Text(
+                                    'Synopsis',
+                                    style: TextStyle(
+                                      fontSize: 20,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 16),
-                            // Genres
-                            if (movie!.genreNames.isNotEmpty) ...[
-                              Wrap(
-                                spacing: 8,
-                                children: movie!.genreNames
-                                    .map((genre) => Chip(
-                                          label: Text(genre),
-                                          backgroundColor: Colors.blue[100],
-                                        ))
-                                    .toList(),
-                              ),
-                              const SizedBox(height: 20),
-                            ],
-                            // Synopsis
-                            const Text(
-                              'Synopsis',
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              movie!.plotOverview,
-                              style: const TextStyle(fontSize: 16, height: 1.5),
-                            ),
-                            // Bouton bande-annonce si disponible
-                            if (movie!.trailer != null) ...[
-                              const SizedBox(height: 20),
-                              ElevatedButton.icon(
-                                onPressed: _openTrailer,
-                                icon: const Icon(Icons.play_circle_outline),
-                                label: const Text('Voir la bande-annonce'),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.red,
-                                  foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 24,
-                                    vertical: 12,
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    movie!.plotOverview,
+                                    style: const TextStyle(fontSize: 16, height: 1.5),
                                   ),
-                                ),
+                                  // Bouton bande-annonce si disponible
+                                  if (movie!.trailer != null) ...[
+                                    const SizedBox(height: 20),
+                                    Center(
+                                      child: ElevatedButton.icon(
+                                        onPressed: _openTrailer,
+                                        icon: const Icon(Icons.play_circle_outline),
+                                        label: const Text('Voir la bande-annonce'),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.red,
+                                          foregroundColor: Colors.white,
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 24,
+                                            vertical: 12,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ],
                               ),
-                            ],
+                            ),
                           ],
                         ),
                       ),
-                    ],
-                  ),
-                ),
+          ),
+        ),
+      ),
     );
   }
 }
