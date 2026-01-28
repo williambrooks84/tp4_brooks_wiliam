@@ -7,6 +7,8 @@ Une application Flutter permettant de :
 
 L’application utilise l’API **Watchmode** pour récupérer les données.
 
+Inspiration de design : https://dribbble.com/shots/20639553-Video-Streaming-mobile-ui
+
 ---
 
 ## 📱 Aperçu de l’application
